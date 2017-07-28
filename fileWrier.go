@@ -12,7 +12,6 @@ import (
 const (
 	WriterCmdChLen = 10000
 	ArchivePath = "archive"
-	ReadBufLen = 512
 )
 
 type writerCmd struct {

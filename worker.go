@@ -4,9 +4,11 @@ import (
 	"github.com/dzendmitry/logger"
 	"fmt"
 	"time"
+	"math/rand"
 )
 
 const (
+	JitterTime = 10
 	SelectSqlRequestTemplate = "SELECT * FROM %s LIMIT ? OFFSET ?"
 )
 
@@ -16,6 +18,7 @@ type workerAnswer struct {
 
 type worker struct {
 	c *connector
+	r *rand.Rand
 	table string
 	sqlRequest string
 	log logger.ILogger
@@ -26,6 +29,7 @@ func GetWorker(connector *connector, table string) *worker {
 		c: connector,
 		sqlRequest: fmt.Sprintf(SelectSqlRequestTemplate, table),
 		table: table,
+		r: rand.New(rand.NewSource(time.Now().UnixNano())),
 		log: logger.InitConsoleLogger(fmt.Sprintf("WORKER-%v-%v", connector.config.name, table)),
 	}
 }
@@ -130,7 +134,7 @@ func (w *worker) checkFails(fails *int) bool {
 		w.log.Fatalf("Error fails have reached the number of attempts")
 		return true
 	} else {
-		time.Sleep(time.Duration(w.c.config.timeout) * time.Millisecond)
+		time.Sleep(time.Duration(w.c.config.timeout + (w.r.Intn(JitterTime) - JitterTime / 2)) * time.Millisecond)
 		return false
 	}
 }
